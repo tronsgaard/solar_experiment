@@ -258,30 +258,19 @@ def ccd_acquire(texp, imtype, objname, ra=None, dec=None)
 def calib_bias(nexp, return_pst=True):
     """
     Make nexp bias exposures and return PST to previous state.
-    If return_pst = False, PST is left in the bias mode.
     """
-    # Save the current PST setup
-    if return_pst:
-        pst_before = PreslitTable().get_state()
     # Set the PST to bias mode
     BiasMode().set_state()
     # Take exposures
     for i in range(nexp):
         ccd_acquire(0.0, 'BIAS', 'BIAS')
-    # Return PST to previous state
-    if return_pst:
-        pst_before.set_state()
 
 
-def calib_flat(nexp, exptime, iodine=False, return_pst=True):
+def calib_flat(nexp, exptime, iodine=False):
     """
     Make nexp halogen flats and return PST to previous state.
     If iodine = True, the iodine cell is rolled in place
-    If return_pst = False, PST is left in the bias mode.
     """
-    # Save the current PST setup
-    if return_pst:
-        pst_before = PreslitTable().get_state()
     # Set the PST to Flat/FlatI2 mode and take exposures
     if iodine:
         FlatI2Mode().set_state()
@@ -291,38 +280,24 @@ def calib_flat(nexp, exptime, iodine=False, return_pst=True):
         FlatMode().set_state()
         for i in range(nexp):
             ccd_acquire(0.0, 'FLAT', 'FLAT')
-    # Return PST to previous state
-    if return_pst:
-        pst_before.set_state()
 
 
 def calib_thar(nexp, exptime, return_pst=True):
     """
     Make nexp ThAr exposures and return PST to previous state.
-    If return_pst = False, PST is left in the bias mode.
     """
-    # Save the current PST setup
-    if return_pst:
-        pst_before = PreslitTable().get_state()
     # Set the PST to bias mode
     ThArMode().set_state()
     # Take exposures
     for i in range(nexp):
         ccd_acquire(0.0, 'THAR', 'THAR')
-    # Return PST to previous state
-    if return_pst:
-        pst_before.set_state()
 
 
-def observe_sun(nexp, exptime, stop_before=None, iodine=False, return_pst=True):
+def observe_sun(nexp, exptime, stop_before=None, iodine=False):
     """
     Make nexp exposures through the sun fiber and return PST to previous state.
     If iodine = True, the iodine cell is rolled in place
-    If return_pst = False, PST is left in the bias mode.
     """
-    # Save the current PST setup
-    if return_pst:
-        pst_before = PreslitTable().get_state()
     # Calculate current position of the sun
     # TODO
     # Set the PST to Sun/SunI2 mode and take exposures
@@ -334,6 +309,4 @@ def observe_sun(nexp, exptime, stop_before=None, iodine=False, return_pst=True):
         SunMode().set_state()
         for i in range(nexp):
             ccd_acquire(0.0, 'SUN', 'SUN')  # FIXME: RA/Dec
-    # Return PST to previous state
-    if return_pst:
-        pst_before.set_state()
+
