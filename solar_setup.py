@@ -3,7 +3,7 @@
 import sys
 import os
 import time
-import datetime
+from datetime import datetime, timedelta
 import ephem
 import Set_M8
 
@@ -326,7 +326,6 @@ def observe_sun(exptime, nexp=1, iodine=False):
     """
     Make nexp exposures through the sun fiber. If iodine = True, the iodine
     cell is rolled in place.
-    If start_altitude is set, the
     """
     # Prepare preslit table
     if iodine:
@@ -341,10 +340,11 @@ def observe_sun(exptime, nexp=1, iodine=False):
 
     # Main loop
     for i in range(nexp):
+        # Calculate RA/Dec at mid exposure
+        midtime = datetime.utcnow() + timedelta(seconds=exptime)
+        sun.compute(midtime)
         # Take exposure
-        print 'Taking exposure at altitude {:.2f} degrees..'\
-            .format(sun.alt / _pi * 180.)
-        sun.compute(datetime.datetime.utcnow())
+        print 'Taking exposure..'
         ccd_acquire(exptime, imtype, imtype, ra=str(sun.ra), dec=str(sun.dec))
 
 
@@ -367,7 +367,7 @@ def sun_ascending():
         Return True if the sun is ascending
     """
     obs, sun = _get_ephem()
-    now = datetime.datetime.now()
+    now = datetime.utcnow()
 
     if obs.next_transit(sun, now) < obs.next_antitransit(sun, now):
         return True
@@ -390,7 +390,7 @@ def wait_for_altitude(min_altitude):
     obs, sun = _get_ephem()
 
     # Stop waiting if the sun is descending
-    if obs.next_antitransit(sun, _now()) < obs.next_transit(sun, _now()):
+    if sun_ascending():
         return
 
     # Wait if altitude is below min_altitude
@@ -398,7 +398,7 @@ def wait_for_altitude(min_altitude):
         print 'Waiting for the sun to reach altitude %f degrees' % min_altitude
         time.sleep(20)
         # Update the sun
-        obs.date = datetime.datetime.utcnow()
+        obs.date = datetime.utcnow()
         sun.compute(obs)
 
 
