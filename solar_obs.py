@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from solar_setup import *
 
 """
@@ -11,29 +12,34 @@ and wrappers defined in solar_setup.py.
 # Save the current PST setup
 pst_before = PreSlitTableState().get_state()
 
-# Go to slit 8
+# Go to slit 8 (25 µm)
 pst.move(settings['slit_motor'], 8)
 
 # TODO: Check that focus is at expected position?
 
 # Run morning calibrations
-calib_bias(50, return_pst=False)
-calib_flat(50, 1.0, return_pst=False)
-calib_thar(3, 1.0, return_pst=False)
+calib_bias(50)
+calib_flat(1.0, 50)
+calib_thar(1.0, 3)
 
 # Initialize the slit guider
 init_slitguider(0.001)
 
+# Wait for altitude
+wait_for_altitude(30)
+
 # Observe the sun with iodine
-observe_sun(0, 1.0, iodine=True, stop_before='14:00', return_pst=False)
+while sun_ascending() and sun_below_altitude(80):
+    observe_sun(1.0, iodine=True)
 
 # Make template observations
-calib_flat(10, 1.0, iodine=True, return_pst=False)
-observe_sun(10, 1.0, iodine=False, return_pst=False)
-calib_flat(10, 1.0, iodine=True, return_pst=False)
+calib_flat(1.0, 10, iodine=True)
+observe_sun(1.0, 10, iodine=False)
+calib_flat(1.0, 10, iodine=True)
 
 # Observe the sun with iodine
-observe_sun(0, 1.0, iodine=True, stop_before='18:00', return_pst=False)
+while sun_above_altitude(30):
+    observe_sun(1.0, iodine=True)
 
 # Done for today! Return PST to previous state
 pst_before.set_state()

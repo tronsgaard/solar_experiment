@@ -1,6 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import sys
 import os
 import time
+import datetime
+import ephem
 import Set_M8
 
 """
@@ -22,7 +26,7 @@ settings = {
     'ccd_readoutspeed': 1,  # [0,1,2,3] = [5MHz, 3MHz, 1MHz, 0.05MHz]
     'ccd_daynight': 'sun',  # Leaves images in /scratch/sun_spec/DATE/raw/
 
-    # Calibration slide
+    # Calibration slide definition
     'calibration_motor': 4,
     'calibration_positions': {
         'free': 1,
@@ -31,7 +35,7 @@ settings = {
         'sun': 4,
     },
 
-    # Iodine slide
+    # Iodine slide definition
     'iodine_motor': 3,
     'iodine_positions': {
         'cell2': 1,
@@ -39,7 +43,7 @@ settings = {
         'cell1': 3,
     },
 
-    # Beamsplitter slide
+    # Beamsplitter slide definition
     'beamsplitter_motor': 2,
     'beamsplitter_positions': {
         'engineering': 1,
@@ -47,7 +51,7 @@ settings = {
         'beamsplitter': 3,
     },
 
-    # Filter wheel
+    # Filter wheel definition
     'filter_motor': 1,
     'filter_positions': {
         'ND1': 1,
@@ -61,7 +65,14 @@ settings = {
     # Other motors
     'slit_motor': 6,
     'focus_motor': 5,
+
+    # Site coordinates
+    'site_lat': 28.2983,
+    'site_long': -16.5094,  # East longitude
+    'site_elev': 2400.0
 }
+
+_pi = 3.141592653589793
 
 # Import the pst module, controlling the preslit table motors
 sys.path.append(settings['DMC_PATH'])
@@ -85,7 +96,7 @@ class PreslitTable():
     def set_state(self):
         """Set the preslit table to the state defined by the positions above"""
         # Move calibration slide
-        if self.calibration is not None:
+        if self.calibration_pos is not None:
             PST.move(settings['calibration_motor'], self.calibration_pos)
         # Move iodine slide
         if self.iodine_pos is not None:
@@ -99,58 +110,59 @@ class PreslitTable():
 
         # ThAr lamp
         if self.thar_lamp is True:
-            os.system(DMC_PATH + "/lamp.py thar on")  # Turn on the ThAr lamp
+            os.system(settings['DMC_PATH'] + "/lamp.py thar on")  # Turn on
             time.sleep(1)
         elif self.thar_lamp is False:
-            os.system(DMC_PATH + "/lamp.py thar off")  # Turn off the ThAr lamp
+            os.system(settings['DMC_PATH'] + "/lamp.py thar off")  # Turn off
             time.sleep(1)
 
         # Halogen lamp
         if self.halogen_lamp is True:
-            os.system(DMC_PATH + "/lamp.py halo on")  # Turn on the halogen lamp
+            os.system(settings['DMC_PATH'] + "/lamp.py halo on")  # Turn on
             time.sleep(1)
         elif self.halogen_lamp is False:
-            os.system(DMC_PATH + "/lamp.py halo off")  # Turn off the halogen lamp
+            os.system(settings['DMC_PATH'] + "/lamp.py halo off")  # Turn off
             time.sleep(1)
 
-        # Set M8 position to idle???  # FIXME: Check what this script does
+        # Set M8 position to match PST configuration
         Set_M8.set_m8_pos()
-
 
     def get_state(self):
         """Get the current state of the preslit table"""
         # Get calibration slide position
         where = PST.where(settings['calibration_motor'])
         if where[0] is None:
-            raise Error('The calibration slide is at an undefined position')
+            raise Exception('The calibration slide is at an undefined position')
         else:
             self.calibration_pos = where[0]
 
         # Get iodine slide position
         where = PST.where(settings['iodine_motor'])
         if where[0] is None:
-            raise Error('The iodine slide is at an undefined position')
+            raise Exception('The iodine slide is at an undefined position')
         else:
             self.iodine_pos = where[0]
 
         # Get beamsplitter slide position
         where = PST.where(settings['beamsplitter_motor'])
         if where[0] is None:
-            raise Error('The beamsplitter slide is at an undefined position')
+            raise Exception('The beamsplitter slide is at an undefined position')
         else:
             self.beamsplitter_pos = where[0]
 
         # Get filter wheel position
         where = PST.where(settings['filter_motor'])
         if where[0] is None:
-            raise Error('The filter wheel is at an undefined position')
+            raise Exception('The filter wheel is at an undefined position')
         else:
             self.filter_pos = where[0]
 
-        # TODO: Get lamps
+        # TODO: Get lamps, for now just assume they were turned off
+        self.thar_lamp = False
+        self.halogen_lamp = False
 
 
-class ThArMode(PreSlitTable):
+class ThArMode(PreslitTable):
     calibration_pos = settings['calibration_positions']['ThAr']
     iodine_pos = settings['iodine_positions']['cell1']
     beamsplitter_pos = settings['beamsplitter_positions']['beamsplitter']
@@ -210,6 +222,16 @@ class SunI2Mode(PreslitTable):
     halogen_lamp = False
 
 
+class IdleMode(PreslitTable):
+    calibration_pos = settings['calibration_positions']['free']
+    iodine_pos = settings['iodine_positions']['free']
+    beamsplitter_pos = settings['beamsplitter_positions']['beamsplitter']
+    filter_pos = settings['filter_positions']['free']
+
+    thar_lamp = False
+    halogen_lamp = False
+
+
 ###############################################################################
 
 # Wrap system calls
@@ -232,10 +254,10 @@ def init_slitguider(texp=0.01):
 
 
 def shutdown_slitguider():
-    os.system(settings['SLIT_PATH'] + "/slit_guider.py -t")  # Stop the slit guider
+    os.system(settings['SLIT_PATH'] + "/slit_guider.py -t")  # Stop slit guider
 
 
-def ccd_acquire(texp, imtype, objname, ra=None, dec=None)
+def ccd_acquire(texp, imtype, objname, ra=None, dec=None):
     command = "%s/c_acq.py -p%i -r%i -e%f -t%s -o%s --daynight=%s" % (
         settings['ANDOR_PATH'],
         settings['ccd_pre_amp_gain'],
@@ -255,58 +277,144 @@ def ccd_acquire(texp, imtype, objname, ra=None, dec=None)
 
 # Define building blocks for the observation
 
-def calib_bias(nexp, return_pst=True):
+def calib_bias(nexp=1):
     """
-    Make nexp bias exposures and return PST to previous state.
+    Make nexp bias exposures.
     """
     # Set the PST to bias mode
     BiasMode().set_state()
     # Take exposures
     for i in range(nexp):
+        print 'Taking bias frame %d of %d' % (i+1, nexp)
         ccd_acquire(0.0, 'BIAS', 'BIAS')
 
 
-def calib_flat(nexp, exptime, iodine=False):
+def calib_flat(exptime, nexp=1, iodine=False):
     """
-    Make nexp halogen flats and return PST to previous state.
+    Make nexp halogen flats of exptime seconds.
     If iodine = True, the iodine cell is rolled in place
     """
-    # Set the PST to Flat/FlatI2 mode and take exposures
+    # Set the PST to Flat/FlatI2 mode
     if iodine:
         FlatI2Mode().set_state()
-        for i in range(nexp):
-            ccd_acquire(0.0, 'FLATI2', 'FLATI2')
+        imtype = 'FLATI2'
     else:
         FlatMode().set_state()
-        for i in range(nexp):
-            ccd_acquire(0.0, 'FLAT', 'FLAT')
+        imtype = 'FLAT'
+    # Take exposures
+    for i in range(nexp):
+        ccd_acquire(exptime, imtype, imtype)
 
 
-def calib_thar(nexp, exptime, return_pst=True):
+def calib_thar(exptime, nexp=1):
     """
-    Make nexp ThAr exposures and return PST to previous state.
+    Make nexp ThAr exposures.
     """
     # Set the PST to bias mode
     ThArMode().set_state()
     # Take exposures
     for i in range(nexp):
-        ccd_acquire(0.0, 'THAR', 'THAR')
+        ccd_acquire(exptime, 'THAR', 'THAR')
 
 
-def observe_sun(nexp, exptime, stop_before=None, iodine=False):
+def observe_sun(exptime, nexp=1, iodine=False):
     """
-    Make nexp exposures through the sun fiber and return PST to previous state.
-    If iodine = True, the iodine cell is rolled in place
+    Make nexp exposures through the sun fiber. If iodine = True, the iodine
+    cell is rolled in place.
+    If start_altitude is set, the
     """
-    # Calculate current position of the sun
-    # TODO
-    # Set the PST to Sun/SunI2 mode and take exposures
+    # Prepare preslit table
     if iodine:
         SunI2Mode().set_state()
-        for i in range(nexp):
-            ccd_acquire(0.0, 'SUNI2', 'SUNI2')  # FIXME: RA/Dec
+        imtype = 'SUNI2'
     else:
         SunMode().set_state()
-        for i in range(nexp):
-            ccd_acquire(0.0, 'SUN', 'SUN')  # FIXME: RA/Dec
+        imtype = 'SUN'
 
+    # Get pyephem object for sun
+    sun = ephem.Sun()
+
+    # Main loop
+    for i in range(nexp):
+        # Take exposure
+        print 'Taking exposure at altitude {:.2f} degrees..'\
+            .format(sun.alt / _pi * 180.)
+        sun.compute(datetime.datetime.utcnow())
+        ccd_acquire(exptime, imtype, imtype, ra=str(sun.ra), dec=str(sun.dec))
+
+
+def _get_ephem():
+    # Define pyephem observer
+    obs = ephem.Observer()
+    obs.lat = str(settings['site_lat'])
+    obs.lon = str(settings['site_long'])
+    obs.elev = settings['site_elev']
+
+    # Get pyephem object for sun
+    sun = ephem.Sun()
+    sun.compute(obs)
+
+    return obs, sun
+
+
+def wait_for_altitude(min_altitude):
+    """Hold the prompt until the sun has reached min_altitude (degrees)"""
+    obs, sun = _get_ephem()
+
+    # Stop waiting if the sun is descending
+    if obs.next_antitransit(sun) < obs.next_transit(sun):
+        return
+
+    # Wait if altitude is below min_altitude
+    while sun.alt < min_altitude / _pi * 180.:
+        print 'Waiting for the sun to reach altitude %d degrees' % min_altitude
+        time.sleep(20)
+        # Update the sun
+        obs.date = datetime.datetime.utcnow()
+        sun.compute(obs)
+
+
+def sun_below_altitude(max_altitude):
+    """
+        Return True if the sun is above min_altitude (degrees).
+    """
+    obs, sun = _get_ephem()
+
+    if sun.alt / _pi * 180. < max_altitude:
+        return True
+    else:
+        return False
+
+
+def sun_above_altitude(min_altitude):
+    """
+        Return True if the sun is above min_altitude (degrees).
+    """
+    obs, sun = _get_ephem()
+
+    if sun.alt / _pi * 180. > min_altitude:
+        return True
+    else:
+        return False
+
+
+def sun_ascending():
+    """
+        Return True if the sun is ascending
+    """
+    obs, sun = _get_ephem()
+
+    if obs.next_transit(sun) < obs.next_antitransit(sun):
+        return True
+    else:
+        return False
+
+
+def sun_descending():
+    """
+        Return True if the sun is descending
+    """
+    if sun_ascending:
+        return False
+    else:
+        return True
