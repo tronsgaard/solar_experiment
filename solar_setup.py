@@ -74,6 +74,7 @@ settings = {
 
 _pi = 3.141592653589793
 
+
 # Import the pst module, controlling the preslit table motors
 sys.path.append(settings['DMC_PATH'])
 import pst
@@ -361,12 +362,35 @@ def _get_ephem():
     return obs, sun
 
 
+def sun_ascending():
+    """
+        Return True if the sun is ascending
+    """
+    obs, sun = _get_ephem()
+    now = datetime.datetime.now()
+
+    if obs.next_transit(sun, _now()) < obs.next_antitransit(sun, _now()):
+        return True
+    else:
+        return False
+
+
+def sun_descending():
+    """
+        Return True if the sun is descending
+    """
+    if sun_ascending:
+        return False
+    else:
+        return True
+
+
 def wait_for_altitude(min_altitude):
     """Hold the prompt until the sun has reached min_altitude (degrees)"""
     obs, sun = _get_ephem()
 
     # Stop waiting if the sun is descending
-    if obs.next_antitransit(sun) < obs.next_transit(sun):
+    if obs.next_antitransit(sun, _now()) < obs.next_transit(sun, _now()):
         return
 
     # Wait if altitude is below min_altitude
@@ -400,25 +424,3 @@ def sun_above_altitude(min_altitude):
         return True
     else:
         return False
-
-
-def sun_ascending():
-    """
-        Return True if the sun is ascending
-    """
-    obs, sun = _get_ephem()
-
-    if obs.next_transit(sun) < obs.next_antitransit(sun):
-        return True
-    else:
-        return False
-
-
-def sun_descending():
-    """
-        Return True if the sun is descending
-    """
-    if sun_ascending:
-        return False
-    else:
-        return True
