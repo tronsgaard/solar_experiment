@@ -12,6 +12,9 @@ and wrappers defined in solar_setup.py.
 # Save the current PST setup
 pst_before = PreSlitTableState().get_state()
 
+# Initialize the slit guider
+init_slitguider(0.01)
+
 # Go to slit 8 (25 µm)
 pst.move(settings['slit_motor'], 8)
 
@@ -21,9 +24,6 @@ pst.move(settings['slit_motor'], 8)
 calib_bias(50)
 calib_flat(1.0, 50)
 calib_thar(1.0, 3)
-
-# Initialize the slit guider
-init_slitguider(0.001)
 
 # Wait for altitude
 wait_for_altitude(30)

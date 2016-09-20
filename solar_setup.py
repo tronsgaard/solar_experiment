@@ -103,7 +103,7 @@ class PreslitTable():
             PST.move(settings['iodine_motor'], self.iodine_pos)
         # Move beamsplitter slide
         if self.beamsplitter_pos is not None:
-            PST.move(settings['bramsplitter_motor'], self.beamsplitter_pos)
+            PST.move(settings['beamsplitter_motor'], self.beamsplitter_pos)
         # Move filter wheel
         if self.filter_pos is not None:
             PST.move(settings['filter_motor'], self.filter_pos)
@@ -250,7 +250,7 @@ def init_slitguider(texp=0.01):
     os.system(settings['SLIT_PATH'] + "/sigu.py start")
     # Set the exposure time value
     os.system(settings['SLIT_PATH'] + "/sigu.py texp manual")
-    os.system(settings['SLIT_PATH'] + "/sigu.py texp %d" % texp)
+    os.system(settings['SLIT_PATH'] + "/sigu.py texp %f" % texp)
 
 
 def shutdown_slitguider():
@@ -367,7 +367,7 @@ def wait_for_altitude(min_altitude):
 
     # Wait if altitude is below min_altitude
     while sun.alt < min_altitude / _pi * 180.:
-        print 'Waiting for the sun to reach altitude %d degrees' % min_altitude
+        print 'Waiting for the sun to reach altitude %f degrees' % min_altitude
         time.sleep(20)
         # Update the sun
         obs.date = datetime.datetime.utcnow()
