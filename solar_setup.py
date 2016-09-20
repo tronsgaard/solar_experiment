@@ -379,7 +379,7 @@ def sun_descending():
     """
         Return True if the sun is descending
     """
-    if sun_ascending:
+    if sun_ascending():
         return False
     else:
         return True
