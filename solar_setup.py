@@ -95,6 +95,7 @@ class PreslitTable():
 
     def set_state(self):
         """Set the preslit table to the state defined by the positions above"""
+        print "Setting the PST state to %s..." % type(self).__name__
         # Move calibration slide
         if self.calibration_pos is not None:
             PST.move(settings['calibration_motor'], self.calibration_pos)
@@ -237,6 +238,7 @@ class IdleMode(PreslitTable):
 # Wrap system calls
 
 def init_slitguider(texp=0.01):
+    print "Attempting to stop and start the slit_guider daemon..."
     # Stop the slit guider and wait till it is initialized
     os.system(settings['SLIT_PATH'] + "/slit_guider.py -t")
     os.system("sleep 5")
@@ -254,10 +256,12 @@ def init_slitguider(texp=0.01):
 
 
 def shutdown_slitguider():
+    print "Attempting to stop the slit_guider daemon..."
     os.system(settings['SLIT_PATH'] + "/slit_guider.py -t")  # Stop slit guider
 
 
 def ccd_acquire(texp, imtype, objname, ra=None, dec=None):
+    print "Taking CCD exposure of {:.2f} seconds...".format(texp)
     command = "%s/c_acq.py -p%i -r%i -e%f -t%s -o%s --daynight=%s" % (
         settings['ANDOR_PATH'],
         settings['ccd_pre_amp_gain'],
@@ -347,7 +351,7 @@ def _get_ephem():
     # Define pyephem observer
     obs = ephem.Observer()
     obs.lat = str(settings['site_lat'])
-    obs.lon = str(settings['site_long'])
+    obs.long = str(settings['site_long'])
     obs.elev = settings['site_elev']
 
     # Get pyephem object for sun

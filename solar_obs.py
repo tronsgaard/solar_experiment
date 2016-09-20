@@ -16,7 +16,7 @@ pst_before = PreSlitTableState().get_state()
 init_slitguider(0.01)
 
 # Go to slit 8 (25 µm)
-pst.move(settings['slit_motor'], 8)
+PST.move(settings['slit_motor'], 8)
 
 # TODO: Check that focus is at expected position?
 
