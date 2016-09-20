@@ -273,7 +273,7 @@ def ccd_acquire(texp, imtype, objname, ra=None, dec=None):
         settings['ccd_daynight'])
     # Set object coordinates
     if ra is not None and dec is not None:
-        command += " --obj_ra=%s --obj_dev=%s"  # Format xx:xx:xx
+        command += " --obj_ra=%s --obj_dec=%s"  # Format xx:xx:xx
     # Fire the command
     os.system(command)
 
