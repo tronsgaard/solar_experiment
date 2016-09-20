@@ -402,25 +402,23 @@ def wait_for_altitude(min_altitude):
         sun.compute(obs)
 
 
-def sun_below_altitude(max_altitude):
+def sun_above_altitude(altitude):
     """
-        Return True if the sun is above min_altitude (degrees).
+        Return True if the sun is above altitude (degrees).
     """
     obs, sun = _get_ephem()
 
-    if sun.alt / _pi * 180. < max_altitude:
+    if sun.alt / _pi * 180. > altitude:
         return True
     else:
         return False
 
 
-def sun_above_altitude(min_altitude):
+def sun_below_altitude(altitude):
     """
-        Return True if the sun is above min_altitude (degrees).
+        Return True if the sun is below altitude (degrees).
     """
-    obs, sun = _get_ephem()
-
-    if sun.alt / _pi * 180. > min_altitude:
-        return True
-    else:
+    if sun_above_altitude(altitude):
         return False
+    else:
+        return True
