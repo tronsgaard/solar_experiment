@@ -322,7 +322,7 @@ def calib_thar(exptime, nexp=1):
         ccd_acquire(exptime, 'THAR', 'THAR')
 
 
-def observe_sun(exptime, nexp=1, iodine=False):
+def observe_sun(exptime, nexp=1, condition=None, iodine=False):
     """
     Make nexp exposures through the sun fiber. If iodine = True, the iodine
     cell is rolled in place.
@@ -338,14 +338,22 @@ def observe_sun(exptime, nexp=1, iodine=False):
     # Get pyephem object for sun
     sun = ephem.Sun()
 
-    # Main loop
-    for i in range(nexp):
+    def take_sun_exposure():
         # Calculate RA/Dec at mid exposure
         midtime = datetime.utcnow() + timedelta(seconds=exptime)
         sun.compute(midtime)
         # Take exposure
-        print 'Taking exposure..'
         ccd_acquire(exptime, imtype, imtype, ra=str(sun.ra), dec=str(sun.dec))
+
+    # Main loop
+    # If condition is callable, loop as long as condition returns True
+    if callable(condition):
+        while condition():
+            take_sun_exposure()
+    # Otherwise, take nexp exposures
+    else:
+        for i in range(nexp):
+            take_sun_exposure()
 
 
 def _get_ephem():

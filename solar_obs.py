@@ -9,9 +9,6 @@ and wrappers defined in solar_setup.py.
 -- Written by René Tronsgaard Rasmussen, September 2016
 """
 
-# Save the current PST setup
-pst_before = PreSlitTableState().get_state()
-
 # Initialize the slit guider
 init_slitguider(0.01)
 
@@ -29,8 +26,8 @@ calib_thar(1.0, 3)
 wait_for_altitude(30)
 
 # Observe the sun with iodine
-while sun_ascending() and sun_below_altitude(80):
-    observe_sun(1.0, iodine=True)
+observe_sun(1.0, iodine=True,
+            condition=lambda: sun_ascending() and sun_below_altitude(80))
 
 # Make template observations
 calib_flat(1.0, 10, iodine=True)
@@ -38,9 +35,8 @@ observe_sun(1.0, 10, iodine=False)
 calib_flat(1.0, 10, iodine=True)
 
 # Observe the sun with iodine
-while sun_above_altitude(30):
-    observe_sun(1.0, iodine=True)
+observe_sun(1.0, iodine=True, condition=lambda: sun_above_altitude(30))
 
-# Done for today! Return PST to previous state
-pst_before.set_state()
+# Done for today! Return PST to idle state
+IdleMode().set_state()
 shutdown_slitguider()
