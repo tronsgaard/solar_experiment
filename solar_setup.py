@@ -96,7 +96,7 @@ class PreslitTable():
 
     def set_state(self):
         """Set the preslit table to the state defined by the positions above"""
-        print "Setting the PST state to %s..." % type(self).__name__
+        print "Setting the PST state to %s..." % self.__class__.__name__
         # Move calibration slide
         if self.calibration_pos is not None:
             PST.move(settings['calibration_motor'], self.calibration_pos)
