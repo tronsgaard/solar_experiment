@@ -369,7 +369,7 @@ def sun_ascending():
     obs, sun = _get_ephem()
     now = datetime.datetime.now()
 
-    if obs.next_transit(sun, _now()) < obs.next_antitransit(sun, _now()):
+    if obs.next_transit(sun, now) < obs.next_antitransit(sun, now):
         return True
     else:
         return False
