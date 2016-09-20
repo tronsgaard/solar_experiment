@@ -38,5 +38,5 @@ calib_flat(1.0, 10, iodine=True)
 observe_sun(1.0, iodine=True, condition=lambda: sun_above_altitude(30))
 
 # Done for today! Return PST to idle state
-IdleMode().set_state()
+IdleMode()
 shutdown_slitguider()

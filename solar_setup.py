@@ -84,6 +84,10 @@ PST = pst.PST()
 class PreslitTable():
     """Simplified model of preslit table"""
 
+    def __init__(self):
+        # Set defined state when instance is created
+        self.set_state()
+
     # Motor positions (None means ignore)
     calibration_pos = None
     iodine_pos = None
@@ -287,7 +291,7 @@ def calib_bias(nexp=1):
     Make nexp bias exposures.
     """
     # Set the PST to bias mode
-    BiasMode().set_state()
+    BiasMode()
     # Take exposures
     for i in range(nexp):
         print 'Taking bias frame %d of %d' % (i+1, nexp)
@@ -301,10 +305,10 @@ def calib_flat(exptime, nexp=1, iodine=False):
     """
     # Set the PST to Flat/FlatI2 mode
     if iodine:
-        FlatI2Mode().set_state()
+        FlatI2Mode()
         imtype = 'FLATI2'
     else:
-        FlatMode().set_state()
+        FlatMode()
         imtype = 'FLAT'
     # Take exposures
     for i in range(nexp):
@@ -316,7 +320,7 @@ def calib_thar(exptime, nexp=1):
     Make nexp ThAr exposures.
     """
     # Set the PST to bias mode
-    ThArMode().set_state()
+    ThArMode()
     # Take exposures
     for i in range(nexp):
         ccd_acquire(exptime, 'THAR', 'THAR')
@@ -329,10 +333,10 @@ def observe_sun(exptime, nexp=1, condition=None, iodine=False):
     """
     # Prepare preslit table
     if iodine:
-        SunI2Mode().set_state()
+        SunI2Mode()
         imtype = 'SUNI2'
     else:
-        SunMode().set_state()
+        SunMode()
         imtype = 'SUN'
 
     # Get pyephem object for sun
