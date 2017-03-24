@@ -131,7 +131,7 @@ class PreslitTable():
             time.sleep(1)
 
         # Set M8 position to match PST configuration
-        Set_M8.set_m8_pos()
+        #Set_M8.set_m8_pos()
 
     def get_state(self):
         """Get the current state of the preslit table"""
@@ -170,7 +170,7 @@ class PreslitTable():
 
 class ThArMode(PreslitTable):
     calibration_pos = settings['calibration_positions']['ThAr']
-    iodine_pos = settings['iodine_positions']['cell1']
+    iodine_pos = settings['iodine_positions']['free']
     beamsplitter_pos = settings['beamsplitter_positions']['beamsplitter']
     filter_pos = None
 
@@ -267,17 +267,20 @@ def shutdown_slitguider():
 
 def ccd_acquire(texp, imtype, objname, ra=None, dec=None):
     print "Taking CCD exposure of {:.2f} seconds...".format(texp)
-    command = "%s/c_acq.py -p%i -r%i -e%f -t%s -o%s --daynight=%s" % (
-        settings['ANDOR_PATH'],
-        settings['ccd_pre_amp_gain'],
-        settings['ccd_readoutspeed'],
-        texp,
-        imtype,
-        objname,
-        settings['ccd_daynight'])
+    command = "{andorpath}/c_acq.py -p {gain} -r {readspeed} -e {texp} " \
+              "-t {imtype} -o {objname} --daynight={daynight}".format(
+                  andorpath=settings['ANDOR_PATH'],
+                  gain=settings['ccd_pre_amp_gain'],
+                  readspeed=settings['ccd_readoutspeed'],
+                  texp=texp,
+                  imtype=imtype,
+                  objname=objname,
+                  daynight=settings['ccd_daynight'])
     # Set object coordinates
     if ra is not None and dec is not None:
-        command += " --obj_ra=%s --obj_dec=%s"  # Format xx:xx:xx
+        command += " --obj_ra={} --obj_dec={}".format(ra, dec)  # xx:xx:xx.x
+    # Print command
+    print command
     # Fire the command
     os.system(command)
 
