@@ -36,9 +36,10 @@ settings = {
     },
 
     # Iodine slide definition
+    'default_iodine_cell': 'cell3',
     'iodine_motor': 3,
     'iodine_positions': {
-        'cell2': 1,
+        'cell3': 1,
         'free': 2,
         'cell1': 3,
     },
@@ -79,12 +80,20 @@ _pi = 3.141592653589793
 sys.path.append(settings['DMC_PATH'])
 import pst
 PST = pst.PST()
+# Import the Lamp class, controlling the lamps
+from lamp import Lamp
 
 
 class PreslitTable():
     """Simplified model of preslit table"""
 
-    def __init__(self):
+    def __init__(self, iodine=None):
+        # Override iodine cell position
+        if iodine:
+            try:
+                self.iodine_pos = settings['iodine_positions'][iodine]
+            except:
+                raise Exception('Unknown iodine cell "%s"' % iodine)
         # Set defined state when instance is created
         self.set_state()
 
@@ -116,22 +125,18 @@ class PreslitTable():
 
         # ThAr lamp
         if self.thar_lamp is True:
-            os.system(settings['DMC_PATH'] + "/lamp.py thar on")  # Turn on
-            time.sleep(1)
+            Lamp('thar').set_on()
         elif self.thar_lamp is False:
-            os.system(settings['DMC_PATH'] + "/lamp.py thar off")  # Turn off
-            time.sleep(1)
+            Lamp('thar').set_off()
 
         # Halogen lamp
         if self.halogen_lamp is True:
-            os.system(settings['DMC_PATH'] + "/lamp.py halo on")  # Turn on
-            time.sleep(1)
+            Lamp('halo').set_on()
         elif self.halogen_lamp is False:
-            os.system(settings['DMC_PATH'] + "/lamp.py halo off")  # Turn off
-            time.sleep(1)
+            Lamp('halo').set_off()
 
         # Set M8 position to match PST configuration
-        #Set_M8.set_m8_pos()
+        Set_M8.set_m8_pos()
 
     def get_state(self):
         """Get the current state of the preslit table"""
@@ -163,9 +168,9 @@ class PreslitTable():
         else:
             self.filter_pos = where[0]
 
-        # TODO: Get lamps, for now just assume they were turned off
-        self.thar_lamp = False
-        self.halogen_lamp = False
+        # Get status for lamps
+        self.thar_lamp = True if Lamp('thar').is_on() > 0 else False
+        self.halogen_lamp = True if Lamp('halo').is_on() > 0 else False
 
 
 class ThArMode(PreslitTable):
@@ -190,7 +195,7 @@ class FlatMode(PreslitTable):
 
 class FlatI2Mode(PreslitTable):
     calibration_pos = settings['calibration_positions']['halogen']
-    iodine_pos = settings['iodine_positions']['cell1']
+    iodine_pos = settings['iodine_positions'][settings['default_iodine_cell']]
     beamsplitter_pos = settings['beamsplitter_positions']['beamsplitter']
     filter_pos = None
 
@@ -220,7 +225,7 @@ class SunMode(PreslitTable):
 
 class SunI2Mode(PreslitTable):
     calibration_pos = settings['calibration_positions']['sun']
-    iodine_pos = settings['iodine_positions']['cell1']
+    iodine_pos = settings['iodine_positions'][settings['default_iodine_cell']]
     beamsplitter_pos = settings['beamsplitter_positions']['beamsplitter']
     filter_pos = settings['filter_positions']['free']
 
@@ -336,7 +341,10 @@ def observe_sun(exptime, nexp=1, condition=None, iodine=False):
     """
     # Prepare preslit table
     if iodine:
-        SunI2Mode()
+        if isinstance(iodine, str):
+            SunI2Mode(iodine=iodine)
+        else:
+            SunI2Mode()
         imtype = 'SUNI2'
     else:
         SunMode()
@@ -379,7 +387,7 @@ def _get_ephem():
 
 def sun_ascending():
     """
-        Return True if the sun is ascending
+        Return True if the sun is ascending on the sky
     """
     obs, sun = _get_ephem()
     now = datetime.utcnow()
@@ -392,7 +400,7 @@ def sun_ascending():
 
 def sun_descending():
     """
-        Return True if the sun is descending
+        Return True if the sun is descending on the sky
     """
     if sun_ascending():
         return False
