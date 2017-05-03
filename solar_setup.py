@@ -385,6 +385,12 @@ def _get_ephem():
     return obs, sun
 
 
+def current_altitude():
+    """Return the current altitude of the sun"""
+    obs, sun = _get_ephem()
+    return sun.alt * 180. / _pi
+
+
 def sun_ascending():
     """
         Return True if the sun is ascending on the sky
